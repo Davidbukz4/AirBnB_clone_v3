@@ -86,3 +86,47 @@ class TestFileStorage(unittest.TestCase):
     @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
     def test_save(self):
         """Test that save properly saves objects to file.json"""
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_get_invalid_class(self):
+        """ Test get method with an invalid class """
+        res = models.storage.get('invalid', 'b359hwg89h3b98724u')
+        self.assertEqual(res, None)
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_get_invalid_id(self):
+        """ Test get method with an invalid class id """
+        res = models.storage.get('State', 'b359hwg89h3b98724u')
+        self.assertEqual(res, None)
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_get(self):
+        """ Test get method with a valid class """
+        state = State(name='abuja')
+        models.storage.new(state)
+        models.storage.save()
+        self.assertEqual(models.storage.get('State', state.id).id, state.id)
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_count_no_class(self):
+        """ Test count method with no class """
+        count = 0
+        obj = models.storage.all()
+        for item in obj:
+            count += 1
+        self.assertEqual(count, models.storage.count())
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_count_invalid_class(self):
+        """ Test count method with invalid class """
+        count = 0
+        self.assertEqual(count, models.storage.count('invalid'))
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_count(self):
+        """ Test count method with valid class """
+        count = 0
+        obj = models.storage.all('City')
+        for item in obj:
+            count += 1
+        self.assertEqual(count, models.storage.count('City'))
