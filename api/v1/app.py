@@ -4,12 +4,19 @@ RESTful API
 """
 from models import storage
 from api.v1.views import app_views
-from flask import Flask
+from flask import Flask, jsonify, abort
 from os import getenv
 
 app = Flask(__name__)
 app.register_blueprint(app_views)
 app.url_map.strict_slashes = False
+
+
+@app.errorhandler(404)
+def invalid_page(err):
+    ''' Returns a JSON-formatted 404 status code response '''
+    resp = {"error": "Not found"}
+    return jsonify(resp), 404
 
 
 @app.teardown_appcontext
