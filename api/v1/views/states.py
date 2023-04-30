@@ -8,7 +8,7 @@ from flask import jsonify, abort, request
 from models.state import State
 
 
-@app_views.route('/states/', methods=['GET'])
+@app_views.route('/states', methods=['GET'], strict_slashes=False)
 def states():
     ''' Returns list of an object in dict form '''
     li = []
@@ -18,7 +18,8 @@ def states():
     return jsonify(li)
 
 
-@app_views.route('/states/<state_id>', methods=['GET', 'DELETE'])
+@app_views.route('/states/<state_id>', methods=['GET', 'DELETE'],
+                 strict_slashes=False)
 def states_id(state_id):
     ''' Returns list of an object with specific id in dict form '''
     objs = storage.all('State')
@@ -35,7 +36,7 @@ def states_id(state_id):
     abort(404)
 
 
-@app_views.route('/states/', methods=['POST'])
+@app_views.route('/states/', methods=['POST'], strict_slashes=False)
 def states_post():
     ''' adds a new object '''
     if not request.json:
@@ -50,7 +51,7 @@ def states_post():
             return jsonify(new.to_dict()), 201
 
 
-@app_views.route('/states/<state_id>', methods=['PUT'])
+@app_views.route('/states/<state_id>', methods=['PUT'], strict_slashes=False)
 def states_put(state_id):
     ''' updates an object '''
     objs = storage.all('State')
