@@ -42,28 +42,18 @@ class DBStorage:
 
     def get(self, cls, id):
         """ Retrieves an object """
-        if cls in classes.keys():
-            obj = self.__session.query(eval(cls))
-            for item in obj:
-                if item.id == id:
+        if cls in classes.values() and id and type(id) == str:
+            objs = self.all(cls)
+            for item in objs:
+                if item.split('.')[1] == id:
                     return item
         return None
 
     def count(self, cls=None):
         """ Returns the number of objects in storage """
         count = 0
-        if not(cls):
-            for item in classes:
-                obj = self.__session.query(classes[item]).all()
-                for o in obj:
-                    count += 1
-            return count
-        else:
-            if cls in classes.keys():
-                obj = self.__session.query(eval(cls))
-                for o in obj:
-                    count += 1
-            return count
+        obj = self.all(cls)
+        return len(obj)
 
     def all(self, cls=None):
         """query on the current database session"""

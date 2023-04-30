@@ -25,29 +25,19 @@ class FileStorage:
     __objects = {}
 
     def get(self, cls, id):
-        """ Retrieves an object if it exist """
-        obj = self.__objects
-        for key in obj:
-            val = obj[key]
-            if cls == val.__class__ or cls == val.__class__.__name__:
-                if value.id == id:
-                    return value
+        """ Retrieves an object """
+        if cls in classes.values() and id and type(id) == str:
+            objs = self.all(cls)
+            for item in objs:
+                if item.split('.')[1] == id:
+                    return item
         return None
 
     def count(self, cls=None):
         """ Returns the number of objects in storage """
-        obj = self.__objects
         count = 0
-        if cls:
-            for key in obj:
-                val = obj[key]
-                if cls == val.__class__ or val.__class__.__name__:
-                    count += 1
-            return count
-        else:
-            for key in obj:
-                count += 1
-            return count
+        obj = self.all(cls)
+        return len(obj)
 
     def all(self, cls=None):
         """returns the dictionary __objects"""
