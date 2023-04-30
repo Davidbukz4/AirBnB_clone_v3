@@ -19,10 +19,10 @@ def status_ok():
 def status_all():
     ''' Returns the number of each object by type '''
     stat = {}
-    stat['amenities'] = storage.count('Amenity')
-    stat['cities'] = storage.count('City')
-    stat['places'] = storage.count('Place')
-    stat['reviews'] = storage.count('Review')
-    stat['states'] = storage.count('State')
-    stat['users'] = storage.count('User')
+    stat["amenities"] = storage.count('Amenity')
+    stat["cities"] = storage.count('City')
+    stat["places"] = storage.count('Place')
+    stat["reviews"] = storage.count('Review')
+    stat["states"] = storage.count('State')
+    stat["users"] = storage.count('User')
     return jsonify(stat)
