@@ -44,9 +44,9 @@ class DBStorage:
         """ Retrieves an object """
         if cls in classes.values() and id and type(id) == str:
             objs = self.all(cls)
-            for item in objs:
-                if item.split('.')[1] == id:
-                    return item
+            for k, v in objs:
+                if k.split('.')[1] == id:
+                    return v
         return None
 
     def count(self, cls=None):
