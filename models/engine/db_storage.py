@@ -44,7 +44,7 @@ class DBStorage:
         """ Retrieves an object """
         if cls in classes.values() and id and type(id) == str:
             objs = self.all(cls)
-            for k, v in objs:
+            for k, v in objs.items():
                 if k.split('.')[1] == id:
                     return v
         return None
