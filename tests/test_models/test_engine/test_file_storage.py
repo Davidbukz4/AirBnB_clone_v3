@@ -113,3 +113,51 @@ class TestFileStorage(unittest.TestCase):
         with open("file.json", "r") as f:
             js = f.read()
         self.assertEqual(json.loads(string), json.loads(js))
+
+    @unittest.skipIf(models.storage_t == 'db', 'not testing file storage')
+    def test_get_invalid_class(self):
+        """ test get method with a class that doesn't exist """
+        storage = FileStorage()
+        res = storage.get('make', 'adf87yu24jhs98vh2h')
+        self.assertEqual(res, None)
+
+    @unittest.skipIf(models.storage_t == 'db', 'not testing file storage')
+    def test_get_invalid_id(self):
+        """ test get method with a class id that doesn't exist """
+        storage = FileStorage()
+        res = storage.get('State', 'adf87yu24jhs98vh2h')
+        self.assertEqual(res, None)
+
+    @unittest.skipIf(models.storage_t == 'db', 'not testing file storage')
+    def test_get(self):
+        """ test get method with a class and id that exist """
+        storage = FileStorage()
+        elem = list(storage.all('State').values())[0]
+        res = storage.get('State', elem.id)
+        self.assertEqual(res, None)
+
+    @unittest.skipIf(models.storage_t == 'db', 'not testing file storage')
+    def test_count_without_class(self):
+        """ test count method without a class """
+        storage = FileStorage()
+        count = 0
+        obj = storage.all()
+        for elem in obj:
+            count += 1
+        self.assertEqual(count, storage.count())
+
+    @unittest.skipIf(models.storage_t == 'db', 'not testing file storage')
+    def test_count_invalid_class(self):
+        """ test count method with invalid class """
+        storage = FileStorage()
+        self.assertEqual(0, storage.count('invalid'))
+
+    @unittest.skipIf(models.storage_t == 'db', 'not testing file storage')
+    def test_count(self):
+        """ test count method with a valid class """
+        storage = FileStorage()
+        count = 0
+        obj = storage.all('City')
+        for elem in obj:
+            count += 1
+        self.assertEqual(count, storage.count('City'))
