@@ -1,159 +1,165 @@
-#!/usr/#!/usr/bin/python3
-"""cities"""
+#!/usr/bin/python3
+'''Contains the places view for the API.'''
+from flask import abort, jsonify, make_response, request
+import requests
 from api.v1.views import app_views
-from flask import jsonify, abort, request
+from api.v1.views.amenities import amenities
+from api.v1.views.places_amenities import place_amenities
 from models import storage
+from models.amenity import Amenity
 from models.city import City
+from models.place import Place
 from models.state import State
-from datetime import datetime
-import uuid
+from models.user import User
+import json
+from os import getenv
 
 
-@app_views.route('/states/<state_id>/cities', methods=['GET'])
-@app_views.route('/states/<state_id>/cities/', methods=['GET'])
-def list_cities_of_state(state_id):
-    '''Retrieves a list of all City objects'''
-    all_states = storage.all("State").values()
-    state_obj = [obj.to_dict() for obj in all_states if obj.id == state_id]
-    if state_obj == []:
+@app_views.route('cities/<city_id>/places',
+                 methods=['GET'], strict_slashes=False)
+def place(city_id):
+    """Retrieves the list of all Place objects of a City"""
+    obj_city = storage.get(City, city_id)
+    if not obj_city:
         abort(404)
-    list_cities = [obj.to_dict() for obj in storage.all("City").values()
-                   if state_id == obj.state_id]
-    return jsonify(list_cities)
+
+    return jsonify([obj.to_dict() for obj in obj_city.places])
 
 
-@app_views.route('/states/<state_id>/cities', methods=['POST'])
-@app_views.route('/states/<state_id>/cities/', methods=['POST'])
-def create_city(state_id):
-    '''Creates a City'''
-    if not request.get_json():
-        abort(400, 'Not a JSON')
-    if 'name' not in request.get_json():
-        abort(400, 'Missing name')
-    all_states = storage.all("State").values()
-    state_obj = [obj.to_dict() for obj in all_states if obj.id == state_id]
-    if state_obj == []:
+@app_views.route('/places/<place_id>', methods=['GET'], strict_slashes=False)
+def single_place(place_id):
+    """Retrieves a Place object"""
+    obj = storage.get(Place, place_id)
+    if not obj:
         abort(404)
-    cities = []
-    new_city = City(name=request.json['name'], state_id=state_id)
-    storage.new(new_city)
+    return jsonify(obj.to_dict())
+
+
+@app_views.route('/places/<place_id>',
+                 methods=['DELETE'], strict_slashes=False)
+def del_place(place_id):
+    """Returns an empty dictionary with the status code 200"""
+    obj = storage.get(Place, place_id)
+    if not obj:
+        abort(404)
+    obj.delete()
     storage.save()
-    cities.append(new_city.to_dict())
-    return jsonify(cities[0]), 201
+    return make_response(jsonify({}), 200)
 
 
-@app_views.route('/cities/<city_id>', methods=['GET'])
-def get_city(city_id):
-    '''Retrieves a City object'''
-    all_cities = storage.all("City").values()
-    city_obj = [obj.to_dict() for obj in all_cities if obj.id == city_id]
-    if city_obj == []:
+@app_views.route('cities/<city_id>/places',
+                 methods=['POST'], strict_slashes=False)
+def post_place(city_id):
+    """Returns the new Place with the status code 201"""
+    obj_city = storage.get(City, city_id)
+    if not obj_city:
         abort(404)
-    return jsonify(city_obj[0])
 
-
-@app_views.route('/cities/<city_id>', methods=['DELETE'])
-def delete_city(city_id):
-    '''Deletes a City object'''
-    all_cities = storage.all("City").values()
-    city_obj = [obj.to_dict() for obj in all_cities if obj.id == city_id]
-    if city_obj == []:
-        abort(404)
-    city_obj.remove(city_obj[0])
-    for obj in all_cities:
-        if obj.id == city_id:
-            storage.delete(obj)
-            storage.save()
-    return jsonify({}), 200
-
-
-@app_views.route('/cities/<city_id>', methods=['PUT'])
-def updates_city(city_id):
-    '''Updates a City object'''
-    all_cities = storage.all("City").values()
-    city_obj = [obj.to_dict() for obj in all_cities if obj.id == city_id]
-    if city_obj == []:
-        abort(404)
-    if not request.get_json():
+    new_place = request.get_json()
+    if not new_place:
         abort(400, 'Not a JSON')
-    city_obj[0]['name'] = request.json['name']
-    for obj in all_cities:
-        if obj.id == city_id:
-            obj.name = request.json['name']
+    if 'user_id' not in new_place:
+        abort(400, "Missing user_id")
+    user_id = new_place['user_id']
+    obj_user = storage.get(User, user_id)
+    if not obj_user:
+        abort(404)
+    if 'name' not in new_place:
+        abort(400, "Missing name")
+
+    obj = Place(**new_place)
+    setattr(obj, 'city_id', city_id)
+    storage.new(obj)
     storage.save()
-    return jsonify(city_obj[0]), 200/python3
-'''
-Handles RESTful API for cities
-'''
-from models import storage
-from api.v1.views import app_views
-from flask import jsonify, abort, request
-from models.city import City
-from models.state import State
+    return make_response(jsonify(obj.to_dict()), 201)
 
 
-@app_views.route('/states/<state_id>/cities', methods=['GET'],
-                 strict_slashes=False)
-def cities(state_id):
-    ''' Returns list of an object in dict form '''
-    li = []
-    obj = storage.get(State, state_id)
-    if obj:
-        for item in obj.cities:
-            li.append(item.to_dict())
-        return jsonify(li)
-    abort(404)
+@app_views.route('/places/<place_id>', methods=['PUT'], strict_slashes=False)
+def put_place(place_id):
+    """Returns the Place object with the status code 200"""
+    obj = storage.get(Place, place_id)
+    if not obj:
+        abort(404)
+
+    req = request.get_json()
+    if not req:
+        abort(400, "Not a JSON")
+
+    for k, v in req.items():
+        if k not in ['id', 'user_id', 'city_id', 'created_at', 'updated_at']:
+            setattr(obj, k, v)
+
+    storage.save()
+    return make_response(jsonify(obj.to_dict()), 200)
 
 
-@app_views.route('/cities/<city_id>', methods=['GET', 'DELETE'],
-                 strict_slashes=False)
-def city_id(city_id):
-    ''' Returns list of an object(city) with specific id in dict form '''
-    obj = storage.get(City, city_id)
-    if obj:
-        if request.method == 'GET':
-            return jsonify(obj.to_dict())
-        elif request.method == 'DELETE':
-            obj.delete()
-            storage.save()
-            return jsonify({}), 200
-    abort(404)
+@app_views.route('/places_search', methods=['POST'], strict_slashes=False)
+def places_search():
+    """
+    retrieves all Place objects depending
+    of the JSON in the body of the request
+    """
+    req = request.get_json()
+    if req is None:
+        abort(400, "Not a JSON")
 
+    req = request.get_json()
+    if req is None or (
+        req.get('states') is None and
+        req.get('cities') is None and
+        req.get('amenities') is None
+    ):
+        obj_places = storage.all(Place)
+        return jsonify([obj.to_dict() for obj in obj_places.values()])
 
-@app_views.route('/states/<state_id>/cities', methods=['POST'],
-                 strict_slashes=False)
-def city_post(state_id):
-    ''' adds a new object '''
-    li = []
-    obj = storage.get(State, state_id)
-    if obj and obj.id == state_id:
-        if not request.json:
-            return jsonify("Not a JSON"), 400
-        else:
-            data = request.get_json()
-            if 'name' not in data.keys():
-                return jsonify("Missing name"), 400
-            else:
-                data["state_id"] = state_id
-                new = City(**data)
-                new.save()
-                return jsonify(new.to_dict()), 201
-    abort(404)
+    places = []
 
+    if req.get('states'):
+        obj_states = []
+        for ids in req.get('states'):
+            obj_states.append(storage.get(State, ids))
 
-@app_views.route('/cities/<city_id>', methods=['PUT'], strict_slashes=False)
-def city_put(city_id):
-    ''' updates an object '''
-    obj = storage.get(City, city_id)
-    if obj:
-        if not request.json:
-            return jsonify("Not a JSON"), 400
-        else:
-            data = request.get_json()
-            unchanged = ['state_id', 'id', 'updated_at', 'created_at']
-            for k, v in data.items():
-                if k not in unchanged:
-                    setattr(obj, k, v)
-            storage.save()
-            return jsonify(obj.to_dict())
-    abort(404)
+        for obj_state in obj_states:
+            for obj_city in obj_state.cities:
+                for obj_place in obj_city.places:
+                    places.append(obj_place)
+
+    if req.get('cities'):
+        obj_cities = []
+        for ids in req.get('cities'):
+            obj_cities.append(storage.get(City, ids))
+
+        for obj_city in obj_cities:
+            for obj_place in obj_city.places:
+                if obj_place not in places:
+                    places.append(obj_place)
+
+    if not places:
+        places = storage.all(Place)
+        places = [place for place in places.values()]
+
+    if req.get('amenities'):
+        obj_am = [storage.get(Amenity, id) for id in req.get('amenities')]
+        i = 0
+        limit = len(places)
+        HBNB_API_HOST = getenv('HBNB_API_HOST')
+        HBNB_API_PORT = getenv('HBNB_API_PORT')
+
+        port = 5000 if not HBNB_API_PORT else HBNB_API_PORT
+        first_url = "http://0.0.0.0:{}/api/v1/places/".format(port)
+        while i < limit:
+            place = places[i]
+            url = first_url + '{}/amenities'
+            req = url.format(place.id)
+            response = requests.get(req)
+            place_am = json.loads(response.text)
+            amenities = [storage.get(Amenity, obj['id']) for obj in place_am]
+            for amenity in obj_am:
+                if amenity not in amenities:
+                    places.pop(i)
+                    i -= 1
+                    limit -= 1
+                    break
+            i += 1
+
+    return jsonify([obj.to_dict() for obj in places])
